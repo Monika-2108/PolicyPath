@@ -1,6 +1,6 @@
+
 import os
 import json
-import math
 from datetime import datetime
 
 import streamlit as st
@@ -12,211 +12,209 @@ from falkordb import FalkorDB
 
 load_dotenv()
 
+# --------------------------------------------------
+# PAGE CONFIGURATION
+# --------------------------------------------------
+
 st.set_page_config(
-    page_title="PolicyPath",
+    page_title="PolicyPath | Policy Intelligence",
     page_icon="🧭",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-# -------------------- DESIGN --------------------
+# --------------------------------------------------
+# DESIGN: READABLE INPUTS + MODERN DASHBOARD
+# --------------------------------------------------
 
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+st.markdown(
+    """
+    <style>
+    :root {
+        --pp-bg: #f4f7fc;
+        --pp-card: #ffffff;
+        --pp-text: #172033;
+        --pp-muted: #58657a;
+        --pp-border: #dce3ef;
+        --pp-input-bg: #ffffff;
+        --pp-input-text: #172033;
+    }
 
-html, body, [class*="css"] {
-    font-family: Manrope, sans-serif;
-}
+    .stApp {
+        background: var(--pp-bg);
+        color: var(--pp-text);
+    }
 
-.stApp {
-    background:
-        radial-gradient(circle at 5% 0%, #eeeaff, transparent 28%),
-        radial-gradient(circle at 95% 5%, #dffaff, transparent 25%),
-        #f5f7fb;
-}
+    [data-testid="stSidebar"] {
+        background: #10172a;
+    }
 
-[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #171b32, #33295f, #174b58);
-}
+    [data-testid="stSidebar"] * {
+        color: #f1f5ff;
+    }
 
-[data-testid="stSidebar"] * {
-    color: #ffffff !important;
-}
+    [data-testid="stSidebar"] input,
+    [data-testid="stSidebar"] textarea,
+    [data-testid="stSidebar"] [contenteditable="true"] {
+        background-color: #ffffff !important;
+        color: #172033 !important;
+        -webkit-text-fill-color: #172033 !important;
+        caret-color: #172033 !important;
+    }
 
-.block-container {
-    padding-top: 1.5rem;
-    max-width: 1450px;
-}
+    [data-testid="stSidebar"] input::placeholder,
+    [data-testid="stSidebar"] textarea::placeholder {
+        color: #64748b !important;
+        -webkit-text-fill-color: #64748b !important;
+        opacity: 1 !important;
+    }
 
-.hero {
-    padding: 32px;
-    border-radius: 26px;
-    color: white;
-    background: linear-gradient(115deg, #191c35, #49337a, #087e8b);
-    box-shadow: 0 18px 45px rgba(40, 40, 90, 0.18);
-}
+    [data-testid="stTextInput"] input,
+    [data-testid="stTextArea"] textarea,
+    [data-testid="stChatInput"] textarea {
+        background-color: #ffffff !important;
+        color: #172033 !important;
+        -webkit-text-fill-color: #172033 !important;
+        caret-color: #172033 !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 10px !important;
+    }
 
-.hero h1 {
-    color: white;
-    font-size: clamp(2rem, 4vw, 3.2rem);
-    font-weight: 800;
-    line-height: 1.08;
-}
+    [data-testid="stTextInput"] input::placeholder,
+    [data-testid="stTextArea"] textarea::placeholder,
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: #64748b !important;
+        -webkit-text-fill-color: #64748b !important;
+        opacity: 1 !important;
+    }
 
-.hero p {
-    color: #e4e8ff;
-    max-width: 750px;
-}
+    [data-testid="stSelectbox"] div,
+    [data-testid="stMultiSelect"] div {
+        color: #172033;
+    }
 
-.eyebrow {
-    color: #7657ff;
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 2px;
-}
+    .pp-hero {
+        padding: 30px;
+        border-radius: 22px;
+        color: white;
+        background: linear-gradient(120deg, #172554, #4338ca, #9333ea);
+        margin-bottom: 22px;
+        box-shadow: 0 12px 35px rgba(67, 56, 202, 0.18);
+    }
 
-.metric-card {
-    background: white;
-    border: 1px solid #e5e9f2;
-    border-radius: 19px;
-    padding: 19px;
-    box-shadow: 0 8px 24px rgba(30, 40, 80, 0.06);
-    min-height: 125px;
-}
+    .pp-hero h1 {
+        color: white;
+        font-size: 36px;
+        margin-bottom: 8px;
+    }
 
-.metric-label {
-    color: #758097;
-    font-size: 0.78rem;
-    font-weight: 700;
-}
+    .pp-hero p {
+        color: #e5e7ff;
+        font-size: 16px;
+        margin-bottom: 0;
+    }
 
-.metric-value {
-    color: #202744;
-    font-size: 2.1rem;
-    font-weight: 800;
-}
+    .pp-card {
+        background: white;
+        border: 1px solid #e1e7f0;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 12px;
+        box-shadow: 0 5px 18px rgba(15, 23, 42, 0.045);
+    }
 
-.metric-foot {
-    color: #929bad;
-    font-size: 0.75rem;
-}
+    .pp-card h3 {
+        color: #172033;
+        margin-top: 0;
+    }
 
-.section-heading {
-    font-size: 1.2rem;
-    font-weight: 800;
-    margin: 20px 0 12px;
-}
+    .pp-muted {
+        color: #58657a;
+        font-size: 14px;
+    }
 
-.stButton > button {
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-weight: 800;
-    background: linear-gradient(100deg, #7657ff, #258edb);
-}
+    .pp-tag {
+        display: inline-block;
+        background: #ede9fe;
+        color: #5b21b6;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        margin: 3px 4px 3px 0;
+    }
 
-.stDownloadButton > button {
-    border-radius: 12px;
-    font-weight: 800;
-}
+    div.stButton > button {
+        border-radius: 10px;
+        font-weight: 600;
+        min-height: 40px;
+    }
 
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(46, 204, 143, .5); }
-    70% { box-shadow: 0 0 0 8px rgba(46, 204, 143, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(46, 204, 143, 0); }
-}
+    [data-testid="stMetric"] {
+        background: white;
+        border: 1px solid #e1e7f0;
+        border-radius: 14px;
+        padding: 16px;
+    }
 
-.pulse-dot {
-    display: inline-block;
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: #38d49a;
-    animation: pulse 1.8s infinite;
-    margin-right: 8px;
-}
+    hr {
+        border-color: #dce3ef;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-.risk-high {
-    color: #a52d2d;
-    background: #ffe2df;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-weight: 800;
-}
-
-.risk-medium {
-    color: #875500;
-    background: #fff0ce;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-weight: 800;
-}
-
-.risk-low {
-    color: #126844;
-    background: #dcf8e9;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-weight: 800;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-# -------------------- FALKORDB CONNECTION --------------------
+# --------------------------------------------------
+# FALKORDB CONNECTION
+# --------------------------------------------------
 
 @st.cache_resource
-def connect_graph():
+def get_graph():
+    host = os.getenv("FALKORDB_HOST")
+    port = os.getenv("FALKORDB_PORT")
+    username = os.getenv("FALKORDB_USERNAME")
+    password = os.getenv("FALKORDB_PASSWORD")
+    graph_name = os.getenv("FALKORDB_GRAPH", "policypath")
+
+    if not host or not port or not password:
+        raise ValueError(
+            "Missing FalkorDB settings. Check your local .env file."
+        )
+
     db = FalkorDB(
-        host=os.getenv("FALKORDB_HOST"),
-        port=int(os.getenv("FALKORDB_PORT", "6379")),
-        username=os.getenv("FALKORDB_USERNAME"),
-        password=os.getenv("FALKORDB_PASSWORD"),
+        host=host,
+        port=int(port),
+        username=username or "falkordb",
+        password=password,
         ssl=False,
-        socket_connect_timeout=5,
-        socket_timeout=10,
+        socket_connect_timeout=8,
+        socket_timeout=15,
     )
 
-    return db.select_graph(
-        os.getenv("FALKORDB_GRAPH", "policypath")
-    )
+    return db.select_graph(graph_name)
 
 
-def query_rows(graph, cypher):
+def query_rows(cypher):
+    graph = get_graph()
     result = graph.query(cypher)
 
     headers = []
-    for item in getattr(result, "header", []) or []:
+    for item in result.header:
         if isinstance(item, (list, tuple)):
             headers.append(str(item[-1]))
         else:
             headers.append(str(item))
 
-    output = []
-
-    for row in getattr(result, "result_set", []) or []:
-        record = {}
-
-        for index, value in enumerate(row):
-            key = headers[index] if index < len(headers) else f"column_{index}"
-            record[key] = value
-
-        output.append(record)
-
-    return output
+    return [
+        dict(zip(headers, row))
+        for row in result.result_set
+    ]
 
 
-def count_nodes(graph, label):
-    result = query_rows(
-        graph,
-        f"MATCH (n:{label}) RETURN count(n) AS total"
-    )
-
-    if not result:
-        return 0
-
-    return int(result[0].get("total", 0))
-
+# --------------------------------------------------
+# DATA ACCESS
+# --------------------------------------------------
 
 POLICY_QUERY = """
 MATCH (p:Policy)
@@ -229,888 +227,689 @@ RETURN
     p.description AS description,
     p.category AS category,
     p.status AS status,
-    c.title AS control,
-    r.title AS risk,
-    r.severity AS severity,
-    o.name AS owner
+    collect(DISTINCT c.title) AS controls,
+    collect(DISTINCT r.title) AS risks,
+    collect(DISTINCT r.severity) AS severities,
+    collect(DISTINCT o.name) AS owners
 ORDER BY p.title
 """
 
 
-# -------------------- SIDEBAR --------------------
-
-st.sidebar.markdown("# 🧭 PolicyPath")
-st.sidebar.caption("DECISION INTELLIGENCE")
-
-page = st.sidebar.radio(
-    "WORKSPACE",
-    [
-        "Command Center",
-        "Policy Explorer",
-        "Graph Explorer",
-        "Risk Heatmap",
-        "Decision Brief",
-    ],
-)
-
-st.sidebar.markdown("---")
-st.sidebar.caption("FalkorDB Cloud · policypath")
-
-if st.sidebar.button("Refresh graph data"):
-    st.cache_resource.clear()
-    st.rerun()
+def get_policies():
+    return query_rows(POLICY_QUERY)
 
 
-# -------------------- LOAD GRAPH DATA --------------------
+def get_nodes():
+    return query_rows("""
+        MATCH (n)
+        RETURN
+            labels(n) AS labels,
+            n.id AS id,
+            n.title AS title,
+            n.name AS name,
+            n.description AS description,
+            n.severity AS severity,
+            n.category AS category,
+            n.status AS status
+    """)
+
+
+def get_relationships():
+    return query_rows("""
+        MATCH (a)-[r]->(b)
+        RETURN
+            labels(a) AS source_type,
+            coalesce(a.title, a.name, a.id) AS source,
+            type(r) AS relationship,
+            labels(b) AS target_type,
+            coalesce(b.title, b.name, b.id) AS target
+    """)
+
+
+def display_value(value):
+    if value is None:
+        return "Not specified"
+    if isinstance(value, list):
+        values = [str(x) for x in value if x]
+        return ", ".join(values) if values else "Not specified"
+    return str(value)
+
+
+def normalise(value):
+    return str(value or "").lower()
+
+
+# --------------------------------------------------
+# SIDEBAR NAVIGATION
+# --------------------------------------------------
+
+with st.sidebar:
+    st.markdown("## 🧭 PolicyPath")
+    st.caption("Policy intelligence powered by FalkorDB")
+    st.divider()
+
+    page = st.radio(
+        "Navigation",
+        [
+            "Command Center",
+            "Policy Explorer",
+            "Graph Explorer",
+            "Risk Heatmap",
+            "Decision Brief",
+        ],
+        label_visibility="collapsed",
+    )
+
+    st.divider()
+    st.markdown("### 💬 Ask PolicyPath")
+    st.caption("Ask about policies, controls, risks, or owners.")
+
+    question = st.text_area(
+        "Your question",
+        placeholder="Example: What is our data retention policy?",
+        height=105,
+        key="policy_question",
+        label_visibility="collapsed",
+    )
+
+    ask_button = st.button(
+        "Ask question",
+        type="primary",
+        use_container_width=True,
+    )
+
+    if ask_button:
+        if question.strip():
+            st.session_state["policy_answer"] = question.strip()
+        else:
+            st.warning("Type a question first.")
+
+    if st.button("Refresh data", use_container_width=True):
+        get_graph.clear()
+        st.rerun()
+
+    st.divider()
+    st.caption("Human review is required for policy decisions.")
+
+# --------------------------------------------------
+# CONNECTION AND DATA LOADING
+# --------------------------------------------------
 
 try:
-    graph = connect_graph()
-    policies = query_rows(graph, POLICY_QUERY)
+    policies = get_policies()
+    nodes = get_nodes()
+    relationships = get_relationships()
+    connection_ok = True
 
-    relationships = query_rows(
-        graph,
-        """
-        MATCH (a)-[r]->(b)
-        RETURN labels(a) AS source,
-               type(r) AS relationship,
-               labels(b) AS target
-        """
-    )
-
-    connected = True
-    connection_error = None
-
-except Exception as error:
-    connected = False
-    connection_error = str(error)
+except Exception as exc:
+    connection_ok = False
     policies = []
+    nodes = []
     relationships = []
 
-
-df = pd.DataFrame(policies)
-
-required_columns = [
-    "id", "title", "description", "category", "status",
-    "control", "risk", "severity", "owner"
-]
-
-for column in required_columns:
-    if column not in df.columns:
-        df[column] = ""
-
-if not df.empty:
-    df = df.fillna("")
-
-
-# -------------------- HELPER FUNCTIONS --------------------
-
-def metric_card(label, value, description, symbol):
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div style="display:flex;justify-content:space-between">
-                <span class="metric-label">{label}</span>
-                <span>{symbol}</span>
-            </div>
-            <div class="metric-value">{value}</div>
-            <div class="metric-foot">{description}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def risk_class(severity):
-    severity = str(severity).lower()
-
-    if severity in ["high", "critical"]:
-        return "risk-high"
-
-    if severity == "medium":
-        return "risk-medium"
-
-    return "risk-low"
-
-
-def create_report(question, matches):
-    report = {
-        "application": "PolicyPath",
-        "generated_at": datetime.now().astimezone().isoformat(),
-        "question": question,
-        "graph_records": matches,
-        "notice": (
-            "Decision-support report only. Verify the source policy, "
-            "evidence and required human approvals."
-        ),
-    }
-
-    return json.dumps(
-        report,
-        indent=2,
-        ensure_ascii=False
-    ).encode("utf-8")
-
-
-# -------------------- CONNECTION ERROR --------------------
-
-if not connected:
     st.markdown(
         """
-        <div class="hero">
-            <h1>Connection needs attention</h1>
-            <p>PolicyPath could not query your FalkorDB graph.</p>
+        <div class="pp-hero">
+            <h1>🧭 PolicyPath</h1>
+            <p>Graph-powered policy intelligence</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
-    st.error(connection_error)
-
+    st.error("Could not load data from FalkorDB.")
+    st.code(str(exc))
     st.info(
-        "Check your existing .env values. The app uses ssl=False "
-        "and the graph name policypath."
+        "Check your .env connection settings and confirm that your "
+        "FalkorDB instance is running."
     )
-
     st.stop()
 
+# --------------------------------------------------
+# COMMON HEADER
+# --------------------------------------------------
 
-# -------------------- COMMAND CENTER --------------------
-
-if page == "Command Center":
-
-    st.markdown(
-        """
-        <div class="hero">
-            <span class="pulse-dot"></span>
-            GRAPH CONNECTED
-            <h1>Make policy decisions<br>with the full picture.</h1>
-            <p>
-                Connect policies, controls, risks and accountable owners.
-                Start every exception review with evidence and context.
-            </p>
-            <span class="hero-tag">FalkorDB · Live graph</span>
-            <span class="hero-tag">Risk-aware decisions</span>
-            <span class="hero-tag">Human approval</span>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.write("")
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        metric_card(
-            "POLICIES",
-            count_nodes(graph, "Policy"),
-            "Rules in the graph",
-            "◈",
-        )
-
-    with col2:
-        metric_card(
-            "CONTROLS",
-            count_nodes(graph, "Control"),
-            "Operational safeguards",
-            "⌘",
-        )
-
-    with col3:
-        metric_card(
-            "RISKS",
-            count_nodes(graph, "Risk"),
-            "Mapped exposure areas",
-            "△",
-        )
-
-    with col4:
-        metric_card(
-            "RELATIONSHIPS",
-            len(relationships),
-            "Graph connections",
-            "⤳",
-        )
-
-    left, right = st.columns(2)
-
-    with left:
-        st.markdown(
-            '<div class="section-heading">Policy landscape</div>',
-            unsafe_allow_html=True,
-        )
-
-        if not df.empty:
-            chart_data = df.copy()
-            chart_data["category"] = chart_data["category"].replace(
-                "", "Uncategorised"
-            )
-
-            chart_data = chart_data.groupby(
-                "category"
-            ).size().reset_index(name="count")
-
-            fig = px.pie(
-                chart_data,
-                names="category",
-                values="count",
-                hole=0.65,
-                color_discrete_sequence=[
-                    "#7657ff",
-                    "#17b8c8",
-                    "#ff7b72",
-                    "#ffc857",
-                    "#73c7a8",
-                ],
-            )
-
-            fig.update_layout(
-                height=300,
-                margin=dict(l=5, r=5, t=10, b=10),
-                paper_bgcolor="rgba(0,0,0,0)",
-            )
-
-            st.plotly_chart(fig, use_container_width=True)
-
-        else:
-            st.info("No policies are available.")
-
-    with right:
-        st.markdown(
-            '<div class="section-heading">Risk pulse</div>',
-            unsafe_allow_html=True,
-        )
-
-        if not df.empty:
-            risk_data = df.copy()
-            risk_data["severity"] = risk_data["severity"].replace(
-                "", "Unrated"
-            )
-
-            risk_data = risk_data.groupby(
-                "severity"
-            ).size().reset_index(name="count")
-
-            fig = px.bar(
-                risk_data,
-                x="severity",
-                y="count",
-                color="severity",
-                color_discrete_map={
-                    "Critical": "#b42332",
-                    "High": "#ff7b72",
-                    "Medium": "#ffc857",
-                    "Low": "#48bd91",
-                    "Unrated": "#aeb6c6",
-                },
-            )
-
-            fig.update_layout(
-                height=300,
-                showlegend=False,
-                margin=dict(l=5, r=5, t=10, b=10),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-            )
-
-            st.plotly_chart(fig, use_container_width=True)
-
-        else:
-            st.info("No risk data is available.")
-
-    st.markdown(
-        '<div class="section-heading">Policy overview</div>',
-        unsafe_allow_html=True,
-    )
-
-    if not df.empty:
-        st.dataframe(
-            df[
-                [
-                    "id", "title", "category",
-                    "status", "severity", "owner"
-                ]
-            ],
-            use_container_width=True,
-            hide_index=True,
-        )
-
-
-# -------------------- POLICY EXPLORER --------------------
-
-elif page == "Policy Explorer":
-
-    st.markdown(
-        '<div class="eyebrow">DISCOVER · FILTER · INSPECT</div>'
-        '<h1>Policy Explorer</h1>',
-        unsafe_allow_html=True,
-    )
-
-    search_col, category_col, status_col = st.columns([2, 1, 1])
-
-    with search_col:
-        search = st.text_input(
-            "Search policies",
-            placeholder="Search title, risk, owner or description",
-        )
-
-    with category_col:
-        categories = ["All"] + sorted(
-            x for x in df["category"].astype(str).unique() if x
-        )
-
-        category = st.selectbox("Category", categories)
-
-    with status_col:
-        statuses = ["All"] + sorted(
-            x for x in df["status"].astype(str).unique() if x
-        )
-
-        status = st.selectbox("Status", statuses)
-
-    filtered = df.copy()
-
-    if search:
-        mask = filtered.astype(str).apply(
-            lambda column: column.str.contains(
-                search, case=False, na=False
-            )
-        ).any(axis=1)
-
-        filtered = filtered[mask]
-
-    if category != "All":
-        filtered = filtered[filtered["category"] == category]
-
-    if status != "All":
-        filtered = filtered[filtered["status"] == status]
-
-    st.caption(f"{len(filtered)} matching policy records")
-
-    for _, row in filtered.iterrows():
-
-        with st.container(border=True):
-
-            left, right = st.columns([4, 1])
-
-            with left:
-                st.subheader(row["title"] or "Untitled policy")
-                st.caption(
-                    f"{row['id']} · {row['category']} · {row['status']}"
-                )
-                st.write(row["description"] or "No description recorded.")
-
-            with right:
-                st.markdown(
-                    f'<span class="{risk_class(row["severity"])}">'
-                    f'{row["severity"] or "Unrated"} risk</span>',
-                    unsafe_allow_html=True,
-                )
-                st.caption("OWNER")
-                st.write(row["owner"] or "Not linked")
-
-            control_col, risk_col = st.columns(2)
-
-            control_col.markdown(
-                f"**Control**  \n{row['control'] or 'Not linked'}"
-            )
-
-            risk_col.markdown(
-                f"**Related risk**  \n{row['risk'] or 'Not linked'}"
-            )
-
-
-# -------------------- GRAPH EXPLORER --------------------
-
-elif page == "Graph Explorer":
-
-    st.markdown(
-        '<div class="eyebrow">CONNECTED KNOWLEDGE</div>'
-        '<h1>Graph Explorer</h1>',
-        unsafe_allow_html=True,
-    )
-
-    node_type = st.selectbox(
-        "Choose node type",
-        ["All", "Policy", "Control", "Risk", "Owner"],
-    )
-
-    cypher = """
-    MATCH (n)
-    OPTIONAL MATCH (n)-[r]-(m)
+st.markdown(
     """
+    <div class="pp-hero">
+        <h1>🧭 PolicyPath</h1>
+        <p>
+            Understand company policies by connecting rules, controls,
+            risks, and approval owners in one knowledge graph.
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-    if node_type != "All":
-        cypher += f"WHERE '{node_type}' IN labels(n) "
+col_status, col_graph, col_policy = st.columns(3)
 
-    cypher += """
-    RETURN labels(n) AS labels,
-           coalesce(n.id, '') AS id,
-           coalesce(n.title, n.name, '') AS name,
-           type(r) AS relationship,
-           labels(m) AS connected_labels,
-           coalesce(m.title, m.name, '') AS connected_name
-    LIMIT 100
-    """
+with col_status:
+    st.success("● FalkorDB connected")
 
-    try:
-        graph_rows = query_rows(graph, cypher)
+with col_graph:
+    st.metric("Graph nodes", len(nodes))
 
-        if not graph_rows:
-            st.info("No graph nodes found.")
-        else:
-            nodes = {}
-            edges = []
+with col_policy:
+    st.metric("Relationships", len(relationships))
 
-            for row in graph_rows:
-                source = str(row.get("name") or row.get("id") or "Unnamed")
-                source_labels = row.get("labels") or ["Node"]
+# --------------------------------------------------
+# ANSWER QUESTIONS USING REAL GRAPH DATA
+# --------------------------------------------------
 
-                if isinstance(source_labels, list):
-                    source_type = ",".join(source_labels)
-                else:
-                    source_type = str(source_labels)
+def answer_question(user_question):
+    q = normalise(user_question)
+    results = []
 
-                nodes[source] = source_type
+    # Search policy details
+    for policy in policies:
+        searchable = " ".join([
+            normalise(policy.get("id")),
+            normalise(policy.get("title")),
+            normalise(policy.get("description")),
+            normalise(policy.get("category")),
+            normalise(policy.get("status")),
+            normalise(policy.get("controls")),
+            normalise(policy.get("risks")),
+            normalise(policy.get("owners")),
+        ])
 
-                target = str(row.get("connected_name") or "")
-
-                if target:
-                    target_labels = row.get("connected_labels") or ["Node"]
-
-                    if isinstance(target_labels, list):
-                        target_type = ",".join(target_labels)
-                    else:
-                        target_type = str(target_labels)
-
-                    nodes[target] = target_type
-
-                    edges.append(
-                        (
-                            source,
-                            target,
-                            str(row.get("relationship") or "RELATED_TO"),
-                        )
-                    )
-
-            names = list(nodes.keys())
-
-            positions = {
-                name: (
-                    math.cos(2 * math.pi * i / max(1, len(names))),
-                    math.sin(2 * math.pi * i / max(1, len(names))),
-                )
-                for i, name in enumerate(names)
-            }
-
-            fig = go.Figure()
-
-            for source, target, relation in edges:
-                if source in positions and target in positions:
-                    x1, y1 = positions[source]
-                    x2, y2 = positions[target]
-
-                    fig.add_trace(
-                        go.Scatter(
-                            x=[x1, x2, None],
-                            y=[y1, y2, None],
-                            mode="lines",
-                            line=dict(color="#cbd1e2", width=2),
-                            text=[relation, relation, relation],
-                            hoverinfo="text",
-                            showlegend=False,
-                        )
-                    )
-
-            colors = {
-                "Policy": "#7657ff",
-                "Control": "#17b8c8",
-                "Risk": "#ff7b72",
-                "Owner": "#ffc857",
-            }
-
-            for kind in dict.fromkeys(nodes.values()):
-                subset = [
-                    name for name in names if nodes[name] == kind
-                ]
-
-                fig.add_trace(
-                    go.Scatter(
-                        x=[positions[name][0] for name in subset],
-                        y=[positions[name][1] for name in subset],
-                        mode="markers+text",
-                        text=subset,
-                        textposition="bottom center",
-                        marker=dict(
-                            size=28,
-                            color=colors.get(kind, "#8d98b4"),
-                            line=dict(color="white", width=3),
-                        ),
-                        name=kind,
-                    )
-                )
-
-            fig.update_layout(
-                height=480,
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                xaxis=dict(visible=False),
-                yaxis=dict(visible=False),
-                margin=dict(l=5, r=5, t=20, b=10),
-            )
-
-            st.plotly_chart(fig, use_container_width=True)
-
-            with st.expander("Inspect graph query results"):
-                st.dataframe(
-                    pd.DataFrame(graph_rows),
-                    use_container_width=True,
-                    hide_index=True,
-                )
-
-    except Exception as error:
-        st.error(f"Graph explorer error: {error}")
-
-
-# -------------------- RISK HEATMAP --------------------
-
-elif page == "Risk Heatmap":
-
-    st.markdown(
-        '<div class="eyebrow">EXPOSURE MAP</div>'
-        '<h1>Risk Heatmap</h1>',
-        unsafe_allow_html=True,
-    )
-
-    if df.empty:
-        st.info("No policy records are available.")
-    else:
-        heat = df.copy()
-
-        heat["category"] = heat["category"].replace(
-            "", "Uncategorised"
-        )
-
-        heat["severity"] = heat["severity"].replace(
-            "", "Unrated"
-        )
-
-        pivot = heat.pivot_table(
-            index="category",
-            columns="severity",
-            values="id",
-            aggfunc="count",
-            fill_value=0,
-        )
-
-        severity_order = [
-            name for name in
-            ["Critical", "High", "Medium", "Low", "Unrated"]
-            if name in pivot.columns
+        keywords = [
+            word.strip(".,?!:;()")
+            for word in q.split()
+            if len(word.strip(".,?!:;()")) > 3
         ]
 
-        pivot = pivot.reindex(columns=severity_order)
+        matches = sum(1 for word in keywords if word in searchable)
 
-        fig = px.imshow(
-            pivot,
-            text_auto=True,
-            aspect="auto",
-            color_continuous_scale=[
-                "#e8f8f1",
-                "#ffe0a8",
-                "#ff9a8d",
-                "#b42332",
-            ],
-            labels={
-                "x": "Severity",
-                "y": "Policy category",
-                "color": "Policy count",
-            },
+        if matches:
+            results.append((matches, policy))
+
+    results.sort(key=lambda item: item[0], reverse=True)
+
+    # General questions should still return useful graph context.
+    if not results:
+        return (
+            "I couldn't find a direct match for that question in the "
+            "current graph. Try asking about customer data retention, "
+            "recordings, deletion controls, privacy risks, or the policy "
+            "approver.\n\n"
+            f"Current graph: {len(policies)} policies, "
+            f"{len(nodes)} nodes, and {len(relationships)} relationships."
         )
 
-        fig.update_layout(
-            height=max(300, 85 * len(pivot)),
-            paper_bgcolor="rgba(0,0,0,0)",
+    best_score = results[0][0]
+    matched_policies = [
+        policy for score, policy in results
+        if score >= max(1, best_score - 1)
+    ][:3]
+
+    answer_parts = []
+
+    for policy in matched_policies:
+        answer_parts.append(
+            f"### {display_value(policy.get('title'))}\n"
+            f"**Policy ID:** {display_value(policy.get('id'))}\n\n"
+            f"**Rule / description:** "
+            f"{display_value(policy.get('description'))}\n\n"
+            f"**Category:** {display_value(policy.get('category'))}\n\n"
+            f"**Status:** {display_value(policy.get('status'))}\n\n"
+            f"**Controls:** {display_value(policy.get('controls'))}\n\n"
+            f"**Related risks:** {display_value(policy.get('risks'))}\n\n"
+            f"**Risk severity:** "
+            f"{display_value(policy.get('severities'))}\n\n"
+            f"**Approval owner(s):** "
+            f"{display_value(policy.get('owners'))}"
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+    answer_parts.append(
+        "**Important:** This answer is based on the current graph data. "
+        "The graph does not automatically establish whether a proposed "
+        "exception is legally permitted. Ask the responsible policy owner "
+        "to review exceptions."
+    )
 
+    return "\n\n---\n\n".join(answer_parts)
+
+
+if "policy_answer" in st.session_state:
+    st.markdown("## 💬 Ask PolicyPath")
+    st.markdown(
+        f"**Question:** {st.session_state['policy_answer']}"
+    )
+
+    with st.container(border=True):
         st.markdown(
-            '<div class="section-heading">High-risk policies</div>',
-            unsafe_allow_html=True,
+            answer_question(st.session_state["policy_answer"])
         )
 
-        attention = df[
-            df["severity"].astype(str).str.lower().isin(
-                ["high", "critical"]
-            )
-        ][["id", "title", "category", "severity", "risk", "owner"]]
+    if st.button("Clear answer"):
+        del st.session_state["policy_answer"]
+        st.rerun()
 
-        if attention.empty:
-            st.success("No High or Critical policies are currently mapped.")
-        else:
+    st.divider()
+
+# --------------------------------------------------
+# COMMAND CENTER
+# --------------------------------------------------
+
+if page == "Command Center":
+    st.subheader("Command Center")
+    st.caption("A live overview of the policy knowledge graph.")
+
+    total_policies = len(policies)
+    total_nodes = len(nodes)
+    total_relationships = len(relationships)
+
+    high_risks = sum(
+        1 for node in nodes
+        if normalise(node.get("severity")) == "high"
+    )
+
+    metrics = st.columns(4)
+    metrics[0].metric("Policies", total_policies)
+    metrics[1].metric("Graph nodes", total_nodes)
+    metrics[2].metric("Connections", total_relationships)
+    metrics[3].metric("High-severity risks", high_risks)
+
+    st.markdown("### Policy overview")
+
+    if policies:
+        df = pd.DataFrame(policies)
+
+        left, right = st.columns(2)
+
+        with left:
+            if "category" in df.columns:
+                category_df = (
+                    df["category"]
+                    .fillna("Uncategorised")
+                    .replace("", "Uncategorised")
+                    .value_counts()
+                    .reset_index()
+                )
+                category_df.columns = ["Category", "Policies"]
+
+                fig = px.pie(
+                    category_df,
+                    names="Category",
+                    values="Policies",
+                    hole=0.55,
+                    title="Policies by category",
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+        with right:
+            status_df = (
+                df["status"]
+                .fillna("Unknown")
+                .replace("", "Unknown")
+                .value_counts()
+                .reset_index()
+            )
+            status_df.columns = ["Status", "Count"]
+
+            fig = px.bar(
+                status_df,
+                x="Status",
+                y="Count",
+                color="Status",
+                title="Policy status",
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        st.markdown("### Policies to review")
+
+        for policy in policies[:5]:
+            with st.container(border=True):
+                st.markdown(
+                    f"**{display_value(policy.get('title'))}**"
+                )
+                st.caption(
+                    f"{display_value(policy.get('category'))} · "
+                    f"{display_value(policy.get('status'))}"
+                )
+                st.write(
+                    display_value(policy.get("description"))
+                )
+    else:
+        st.info(
+            "No policies found. Run seed_graph.py to insert the "
+            "example graph data."
+        )
+
+# --------------------------------------------------
+# POLICY EXPLORER
+# --------------------------------------------------
+
+elif page == "Policy Explorer":
+    st.subheader("🔎 Policy Explorer")
+    st.write("Search and filter policies stored in FalkorDB.")
+
+    search_text = st.text_input(
+        "Search policies",
+        placeholder="Search title, description, category, or owner...",
+    )
+
+    categories = sorted({
+        str(p.get("category"))
+        for p in policies
+        if p.get("category")
+    })
+
+    selected_category = st.selectbox(
+        "Category",
+        ["All categories"] + categories,
+    )
+
+    filtered = []
+
+    for policy in policies:
+        text_to_search = " ".join([
+            normalise(policy.get("id")),
+            normalise(policy.get("title")),
+            normalise(policy.get("description")),
+            normalise(policy.get("category")),
+            normalise(policy.get("owners")),
+            normalise(policy.get("controls")),
+            normalise(policy.get("risks")),
+        ])
+
+        matches_search = (
+            not search_text.strip()
+            or search_text.lower() in text_to_search
+        )
+
+        matches_category = (
+            selected_category == "All categories"
+            or policy.get("category") == selected_category
+        )
+
+        if matches_search and matches_category:
+            filtered.append(policy)
+
+    st.caption(f"{len(filtered)} matching policies")
+
+    if filtered:
+        for policy in filtered:
+            with st.container(border=True):
+                st.markdown(f"### {display_value(policy.get('title'))}")
+                st.caption(
+                    f"ID: {display_value(policy.get('id'))} · "
+                    f"{display_value(policy.get('category'))} · "
+                    f"{display_value(policy.get('status'))}"
+                )
+
+                st.write(
+                    display_value(policy.get("description"))
+                )
+
+                a, b = st.columns(2)
+                with a:
+                    st.markdown("**Controls**")
+                    st.write(display_value(policy.get("controls")))
+
+                with b:
+                    st.markdown("**Related risks**")
+                    st.write(display_value(policy.get("risks")))
+
+                st.markdown("**Approval owners**")
+                st.write(display_value(policy.get("owners")))
+    else:
+        st.info("No matching policies found.")
+
+# --------------------------------------------------
+# GRAPH EXPLORER
+# --------------------------------------------------
+
+elif page == "Graph Explorer":
+    st.subheader("🕸️ Graph Explorer")
+    st.write(
+        "Explore the nodes and relationships stored in FalkorDB."
+    )
+
+    if nodes:
+        node_df = pd.DataFrame(nodes)
+
+        if "labels" in node_df.columns:
+            node_df["node_type"] = node_df["labels"].apply(
+                lambda x: ", ".join(x) if isinstance(x, list) else str(x)
+            )
+
+        st.markdown("### Nodes")
+        st.dataframe(node_df, use_container_width=True, hide_index=True)
+
+    if relationships:
+        rel_df = pd.DataFrame(relationships)
+
+        st.markdown("### Relationships")
+        st.dataframe(rel_df, use_container_width=True, hide_index=True)
+
+        graph_fig = go.Figure()
+
+        positions = {}
+        node_names = []
+
+        for rel in relationships:
+            for name in [rel.get("source"), rel.get("target")]:
+                if name and name not in node_names:
+                    node_names.append(name)
+
+        import math
+
+        count = max(len(node_names), 1)
+
+        for i, name in enumerate(node_names):
+            angle = 2 * math.pi * i / count
+            positions[name] = (math.cos(angle), math.sin(angle))
+
+        edge_x, edge_y = [], []
+
+        for rel in relationships:
+            source = rel.get("source")
+            target = rel.get("target")
+
+            if source in positions and target in positions:
+                x0, y0 = positions[source]
+                x1, y1 = positions[target]
+
+                edge_x.extend([x0, x1, None])
+                edge_y.extend([y0, y1, None])
+
+        graph_fig.add_trace(go.Scatter(
+            x=edge_x,
+            y=edge_y,
+            mode="lines",
+            line=dict(width=2, color="#a5b4fc"),
+            hoverinfo="none",
+            name="Relationships",
+        ))
+
+        for rel in relationships:
+            source = rel.get("source")
+            target = rel.get("target")
+
+            if source in positions and target in positions:
+                x0, y0 = positions[source]
+                x1, y1 = positions[target]
+                graph_fig.add_annotation(
+                    x=(x0 + x1) / 2,
+                    y=(y0 + y1) / 2,
+                    text=str(rel.get("relationship", "")),
+                    showarrow=False,
+                    font=dict(size=10, color="#4338ca"),
+                    bgcolor="white",
+                )
+
+        graph_fig.add_trace(go.Scatter(
+            x=[positions[n][0] for n in node_names],
+            y=[positions[n][1] for n in node_names],
+            mode="markers+text",
+            text=node_names,
+            textposition="top center",
+            marker=dict(
+                size=30,
+                color="#6366f1",
+                line=dict(width=2, color="#ffffff"),
+            ),
+            hovertemplate="%{text}<extra></extra>",
+            name="Graph nodes",
+        ))
+
+        graph_fig.update_layout(
+            title="Policy relationship map",
+            showlegend=False,
+            height=520,
+            margin=dict(l=20, r=20, t=60, b=20),
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+        )
+
+        st.plotly_chart(graph_fig, use_container_width=True)
+    else:
+        st.info("No relationships found in the graph.")
+
+# --------------------------------------------------
+# RISK HEATMAP
+# --------------------------------------------------
+
+elif page == "Risk Heatmap":
+    st.subheader("🔥 Risk Heatmap")
+    st.write("Review risks connected to policies.")
+
+    risk_nodes = [
+        node for node in nodes
+        if isinstance(node.get("labels"), list)
+        and "Risk" in node.get("labels", [])
+    ]
+
+    if risk_nodes:
+        risk_df = pd.DataFrame(risk_nodes)
+
+        risk_df["severity"] = (
+            risk_df["severity"]
+            .fillna("Unknown")
+            .replace("", "Unknown")
+        )
+
+        severity_counts = (
+            risk_df["severity"]
+            .value_counts()
+            .rename_axis("Severity")
+            .reset_index(name="Risk count")
+        )
+
+        left, right = st.columns([1, 2])
+
+        with left:
+            st.markdown("### Severity summary")
             st.dataframe(
-                attention,
+                severity_counts,
                 use_container_width=True,
                 hide_index=True,
             )
 
+        with right:
+            fig = px.bar(
+                severity_counts,
+                x="Severity",
+                y="Risk count",
+                color="Severity",
+                title="Risks by severity",
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
-# -------------------- DECISION BRIEF --------------------
+        st.markdown("### Risk details")
+
+        for risk in risk_nodes:
+            severity = display_value(risk.get("severity"))
+
+            with st.container(border=True):
+                st.markdown(f"**{display_value(risk.get('title'))}**")
+                st.caption(f"Severity: {severity}")
+                st.write(display_value(risk.get("description")))
+    else:
+        st.info(
+            "No Risk nodes found. Check that your graph contains "
+            "nodes labelled Risk."
+        )
+
+# --------------------------------------------------
+# DECISION BRIEF
+# --------------------------------------------------
 
 elif page == "Decision Brief":
-
-    st.markdown(
-        '<div class="eyebrow">EXCEPTION REVIEW WORKSPACE</div>'
-        '<h1>Decision Brief</h1>',
-        unsafe_allow_html=True,
-    )
-
+    st.subheader("📄 Decision Brief")
     st.write(
-        "Build a review brief from real graph records. "
-        "This tool does not automatically approve exceptions."
+        "Create a downloadable snapshot of a policy and its connected "
+        "controls, risks, and owners."
     )
 
-    question = st.text_area(
-        "What decision are you considering?",
-        value=(
-            "Can we retain customer support call recordings "
-            "for 18 months instead of the standard 90 days?"
-        ),
-        height=100,
-    )
+    if policies:
+        policy_options = {
+            display_value(p.get("title")): p for p in policies
+        }
 
-    if not df.empty:
-        options = [
-            f"{row['id']} — {row['title']}"
-            for _, row in df.iterrows()
-        ]
-
-        selection = st.selectbox("Policy to review", options)
-        selected_id = selection.split(" — ", 1)[0]
-
-        chosen = df[df["id"].astype(str) == selected_id].iloc[0]
-
-    else:
-        chosen = None
-
-    if st.button("Generate decision context", type="primary"):
-
-        if not question.strip():
-            st.warning("Enter a question first.")
-
-        else:
-            tokens = [
-                word.lower().strip(".,?!:;()")
-                for word in question.split()
-                if len(word) > 3
-            ]
-
-            scored = []
-
-            for _, row in df.iterrows():
-                text = " ".join(
-                    str(row.get(column, ""))
-                    for column in [
-                        "title", "description", "category",
-                        "control", "risk", "owner"
-                    ]
-                ).lower()
-
-                score = sum(token in text for token in tokens)
-
-                if score:
-                    scored.append((score, row))
-
-            scored.sort(key=lambda item: item[0], reverse=True)
-
-            matches = [row for _, row in scored[:5]]
-
-            if chosen is not None and all(
-                str(row["id"]) != str(chosen["id"])
-                for row in matches
-            ):
-                matches.insert(0, chosen)
-
-            report_rows = []
-
-            for row in matches:
-                report_rows.append({
-                    column: str(row.get(column, ""))
-                    for column in required_columns
-                })
-
-            st.session_state["policy_brief"] = {
-                "question": question.strip(),
-                "matches": report_rows,
-            }
-
-    if st.session_state.get("policy_brief"):
-
-        brief = st.session_state["policy_brief"]
-        matches = brief["matches"]
-
-        st.markdown(
-            '<div class="section-heading">Related graph records</div>',
-            unsafe_allow_html=True,
+        selected_title = st.selectbox(
+            "Select a policy",
+            list(policy_options.keys()),
         )
 
-        if matches:
-            for item in matches:
+        selected_policy = policy_options[selected_title]
 
-                with st.container(border=True):
-                    st.subheader(item["title"])
-                    st.caption(
-                        f"{item['id']} · {item['category']} · "
-                        f"{item['status']}"
-                    )
+        report = {
+            "report_title": "PolicyPath Decision Brief",
+            "generated_at": datetime.now().astimezone().isoformat(),
+            "policy": selected_policy,
+            "connected_graph": {
+                "nodes": len(nodes),
+                "relationships": len(relationships),
+            },
+            "review_notice": (
+                "This report is generated from current graph data. "
+                "It is not legal advice or automatic approval."
+            ),
+        }
 
-                    st.write(item["description"] or "No description recorded.")
+        st.markdown("### Report preview")
 
-                    a, b, c = st.columns(3)
-
-                    a.markdown(
-                        f"**Control**  \n{item['control'] or 'Not linked'}"
-                    )
-
-                    b.markdown(
-                        f"**Related risk**  \n{item['risk'] or 'Not linked'}"
-                    )
-
-                    c.markdown(
-                        f"**Owner**  \n{item['owner'] or 'Not linked'}"
-                    )
-
-        else:
-            st.warning(
-                "No records matched. This does not mean the action is allowed."
-            )
-
-        st.markdown(
-            '<div class="section-heading">Approval workflow</div>',
-            unsafe_allow_html=True,
+        st.markdown(f"**Policy:** {selected_title}")
+        st.write(
+            display_value(selected_policy.get("description"))
         )
 
-        workflow = [
-            ("1. Locate governing policy", "Completed" if matches else "Needs review"),
-            ("2. Validate evidence and scope", "Human review required"),
-            ("3. Risk owner assessment", "Pending"),
-            ("4. Policy owner approval", "Pending"),
-            ("5. Record exception and expiry", "Pending"),
-        ]
+        st.markdown("**Controls**")
+        st.write(display_value(selected_policy.get("controls")))
 
-        for title, status_text in workflow:
-            st.markdown(f"**● {title}**")
-            st.caption(status_text)
+        st.markdown("**Related risks**")
+        st.write(display_value(selected_policy.get("risks")))
+
+        st.markdown("**Approval owners**")
+        st.write(display_value(selected_policy.get("owners")))
 
         st.warning(
-            "Human decision required. The current graph includes a "
-            "90-day recording-retention policy. Do not treat this report "
-            "as approval to extend retention."
+            "A human policy owner must review and approve any exception."
         )
 
         st.download_button(
-            "Download decision report",
-            data=create_report(brief["question"], matches),
-            file_name="policypath_decision_report.json",
+            "⬇️ Download decision brief (JSON)",
+            data=json.dumps(report, indent=2, default=str),
+            file_name="policypath_decision_brief.json",
             mime="application/json",
+            use_container_width=True,
         )
-
-        st.caption(
-            "The matching method uses keyword overlap. It is not an LLM "
-            "or semantic search system."
-        )
-
-
-# -------------------- ASK-POLICY ASSISTANT --------------------
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("### Ask PolicyPath")
-
-ask_question = st.sidebar.text_input(
-    "Ask about your policies",
-    placeholder="Which control handles retention?",
-)
-
-if st.sidebar.button("Ask PolicyPath"):
-
-    if not ask_question.strip():
-        st.sidebar.warning("Type a question first.")
 
     else:
-        tokens = [
-            word.lower().strip(".,?!:;()")
-            for word in ask_question.split()
-            if len(word) > 3
-        ]
+        st.info("No policies available to generate a report.")
 
-        matches = []
+# --------------------------------------------------
+# FOOTER
+# --------------------------------------------------
 
-        for _, row in df.iterrows():
-            text = " ".join(
-                str(row.get(column, ""))
-                for column in [
-                    "title", "description", "category",
-                    "control", "risk", "severity", "owner"
-                ]
-            ).lower()
+st.divider()
 
-            score = sum(token in text for token in tokens)
-
-            if score:
-                matches.append((score, row))
-
-        matches.sort(key=lambda item: item[0], reverse=True)
-
-        st.session_state["assistant_question"] = ask_question
-        st.session_state["assistant_results"] = [
-            {
-                column: str(row.get(column, ""))
-                for column in [
-                    "title", "description", "control",
-                    "risk", "severity", "owner"
-                ]
-            }
-            for _, row in matches[:3]
-        ]
-
-if st.session_state.get("assistant_question"):
-
-    st.sidebar.markdown("**Graph-based results**")
-    st.sidebar.caption(st.session_state["assistant_question"])
-
-    results = st.session_state.get("assistant_results", [])
-
-    if not results:
-        st.sidebar.info("No matching records found.")
-
-    for item in results:
-        st.sidebar.markdown(f"**{item['title']}**")
-        st.sidebar.caption(item["description"] or "No description stored.")
-        st.sidebar.write(f"Control: {item['control'] or 'Not linked'}")
-        st.sidebar.write(f"Risk: {item['risk'] or 'Not linked'}")
-        st.sidebar.write(f"Owner: {item['owner'] or 'Not linked'}")
-
-    st.sidebar.caption(
-        "Keyword-based lookup only. Verify the source policy and "
-        "consult the responsible owner."
-    )
-
-
-# -------------------- FOOTER --------------------
-
-st.markdown(
-    """
-    <div style="
-        text-align:center;
-        margin-top:40px;
-        padding-top:20px;
-        border-top:1px solid #e3e7f0;
-        color:#939bad;
-        font-size:.75rem;
-    ">
-        POLICYPATH · DECISION CONTEXT GRAPH · HUMAN-IN-THE-LOOP
-    </div>
-    """,
-    unsafe_allow_html=True,
+st.caption(
+    "PolicyPath · FalkorDB Graph Hacks · Company Brain · "
+    "Graph-backed policy intelligence with human review."
 )
